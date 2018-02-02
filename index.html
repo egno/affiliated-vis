@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  background-color: #f5f5f5;
+}
+
+svg {
+  height: 100%;
+  width: 100%;
+}
+
+.zoom-layer {
+  transition: all 1s ease-out;
+};
+
+.links line {
+  stroke-opacity: 0.3;
+}
+
+table {
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+
+td, th {
+  border: 1px solid gray;
+}
+
+.table-header {
+}
+
+.total {
+  font-weight: bold;
+  background: #eee;
+}
+
+
+.marker {
+  fill: #999;
+  opacity: 0.6;
+}
+
+
+.nodes circle {
+  /*opacity: 0.8;*/
+}
+
+.nodes circle:hover {
+  stroke: #444;
+  /*opacity: 1;*/
+}
+
+.center {
+  text-align: center;
+}
+
+.right {
+  text-align: right;
+}
+
+
+text {
+  font-family: sans-serif;
+  font-size: 10px;
+}
+
+#graph {
+  position: absolute;
+  width: calc(100% - 16px);
+  height: calc(100vh - 36px);
+}
+
+#infoswitch {
+  font-family: sans-serif;
+  font-size: 1em;
+  position: fixed;
+  top:8px;
+  right:8px;
+  width: 1em;
+  text-align: center;
+  z-index: 999999;
+  border: 1px solid #ddd;
+  padding: 2px;
+  background-color: #eee;
+  cursor: pointer;
+  color: #777;
+}
+
+#filterswitch {
+  font-family: sans-serif;
+  font-size: 1em;
+  position: fixed;
+  top:8px;
+  right: calc(8px + 2em);
+  width: 1em;
+  text-align: center;
+  z-index: 999999;
+  border: 1px solid #ddd;
+  padding: 2px;
+  background-color: #eee;
+  cursor: pointer;
+  color: #777;
+}
+
+#filterbox {
+  font-family: sans-serif;
+  font-size: 0.7em;
+  margin: 0;
+  padding: 0.5em;
+  position: absolute;
+  left: 78%;
+  width: 20%;
+  height: calc(100vh - 36px);
+  background: #f5f5f5;
+  opacity: 0.7;
+  z-index: 999997;
+}
+
+
+#ifoswitch *:hover {
+  background-color: #ddd;
+}
+
+#infobox {
+  font-family: sans-serif;
+  font-size: 0.7em;
+  margin: 0;
+  padding: 0.5em;
+  position: absolute;
+  left: 78%;
+  width: 20%;
+  height: calc(100vh - 36px);
+  background: #f5f5f5;
+  opacity: 0.7;
+  z-index: 999998;
+}
+
+#search {
+  position:absolute;
+  font-family: sans-serif;
+  font-size: 0.6em;
+}
+
+#search .label {
+  float: left;
+  margin-top: 0.5em;
+  margin-right: 0.5em;
+  color: #999;
+}
+
+#search input {
+}
+
+#legend {
+  position:absolute;
+  top: 3.5em;
+  max-width: 50em;
+  max-height: 95vh;
+  font-family: sans-serif;
+  font-size: 0.55em;
+  background: rgba(255,255,255,0.8);
+  overflow-x: auto;
+}
+
+#legend table > tr {
+  cursor: pointer;
+}
+
+#legend table > tr:hover {
+  background: rgba(255,255,200,0.8);
+}
+
+ul {
+  list-style-type: none;
+  padding-left: 1em;
+}
+
+.selected {
+  /*fill: yellow;*/
+  /*stroke: yellow;*/
+}
+
+.deselected {
+  fill: #ddd;
+  stroke: #ddd;
+}
+
+.external {
+  fill: whilte;
+}
+
+.source {
+  color: #909;
+  stroke: #909;
+}
+
+.target {
+  color: #009;
+  stroke: #009;
+}
+
+.main-item {
+  font-weight: bold;
+  stroke: black;
+}
+
+.fixed {
+  stroke: yellow;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+</style>
+<div id="graph">
+  <svg>
+    <!-- <defs>
+      <marker id="arrowhead" markerWidth="4" markerHeight="6"
+      refX="-4" refY="2" orient="auto">
+        <polygon class="marker" points="0 2, 6 4, 6 0" />
+      </marker>
+    </defs> -->
+  </svg>
+</div>
+<div id="search">
+  <div class="label">
+    Поиск
+  </div>
+</div>
+<div id="legend">
+  <table class="text-items">
+  </table>
+</div>
+<div id="filterswitch" onclick="switchFilterbox()" >
+  F
+</div>
+<div id="filterbox" class="hidden">
+  <h2>Фильтры</h2>
+  <h3>Филиалы</h3>
+    <ul>
+      <li>
+        <input type="checkbox" checked onclick='filialClick(this, 43)'/> Бердск
+      </li>
+    </ul>
+</div>
+<div id="infoswitch" onclick="switchInfobox()">
+  ?
+</div>
+<div id="infobox" onclick="hideInfobox()">
+  <h1>
+    Связи клиентов
+  </h1>
+  <p>
+    Клиенты отображаются цветными кругами.
+  </p>
+  <p>
+    Цвет круга зависит от ПДЗ.
+    Если ПДЗ нет, то цвет - зелёный. Клиенты с максимальной ПДЗ - красные.
+  </p>
+  <p>
+    Размер круга зависит от величины ДЗ. Чем больше ДЗ, тем больше размер круга.
+  </p>
+  <p>
+    Белыми кругами отображаются юридические и физические лица, не являющиеся клиентами.
+  </p>
+  <p>
+    При наведении курсора мыши на круг появляется подсказка с наименованием соответствующего юридического или физического лица.
+  </p>
+  <p>
+    При щелчке мышкой на круг соответствующее юридическое или физическое лицо и связанные с ним лица выделяются и появляется таблица, в которой отображены все связанные лица.
+    В первой строке таблицы отображается выделенное юридическое или физическое лицо. Ниже - синим цветом зависимые от него лица, фиолетовым - совладельцы.
+    Ещё ниже - остальные, напрямую не связанные с выделенным, лица.
+  </p>
+  <p>
+    Связи выделенного лица также отражаются на графе. Синим цветом - зависимые, фиолетовым - совладельцы.
+  </p>
+  <p>
+    Щелчком мыши на строке таблицы можно выделить соответствующее юридическое или физическое лицо.
+  </p>
+  <p>
+    Используя поле "Поиск" можно быстро найти организацию по ИНН или наименованию.
+  </p>
+  <p>
+    Увеличить отдельную область можно прокруткой колёсика мыши. Мышью также можно переместить область просмотра.
+  </p>
+</div>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script>
+
+var svg = d3.select("svg"),
+    width = svg.node().getBoundingClientRect().width,
+    height = svg.node().getBoundingClientRect().height;
+
+var bodyStrength = -20
+var linkDistance = 4
+var linkStrength = 0.8
+var gStrength = 0.20
+var velocityDecay = 0.5
+var collideRadius = 6
+
+var zoomLevel = 1
+var zoomStep = 0.4
+var zoomFocus = 4
+
+var circleStroke = 0.7
+var lineStroke = 0.7
+
+var minGroupSize = 4
+
+var maxIteration = 10
+
+var select_mode = false
+var selection_totals = {}
+
+var infoVisible = false
+var filterVisible = false
+
+var forceLink = d3.forceLink().id(function(d) { return d.id; }).distance(linkDistance).strength(linkStrength);
+var forceManyBody = d3.forceManyBody().strength(bodyStrength);
+
+var simulation = d3.forceSimulation()
+    .alphaMin(0)
+    .alphaTarget(0.004)
+    .velocityDecay(velocityDecay)
+    .force("collide", d3.forceCollide(collideRadius))
+    .force("link", forceLink)
+    .force("charge", forceManyBody)
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("x",d3.forceX(width / 2).strength(gStrength))
+    .force("y",d3.forceY(height / 2).strength(gStrength))
+;
+
+var textItems = d3.select('.text-items')
+
+var clients = []
+var selectedRegBodys = []
+
+var dispDolg
+
+function normalDisp (arr) {
+  if (!arr.length) return
+  var avg = arr.reduce((r, x) => r + x, 0) / arr.length
+  var sigma = Math.sqrt((1 / (arr.length - 1)) * arr.reduce((r, x) => r + Math.pow(x - avg, 2), 0))
+  return {
+    avg: avg,
+    sigma: sigma,
+    min: arr.reduce((r, x) => Math.min(r, x), null),
+    max: arr.reduce((r, x) => Math.max(r, x), 0)
+  }
+}
+
+function normalDispPart (value, disp, sigmaLeft = 1, sigmaRight = 1) {
+  if (!value) return 0
+  if (value < (disp.avg - sigmaLeft * disp.sigma)) return 0
+  if (value > (disp.avg + sigmaRight * disp.sigma)) return 1
+  return (value - (disp.avg - sigmaLeft * disp.sigma)) / ((sigmaLeft + sigmaRight) * disp.sigma)
+}
+
+function color(v, sel = true) {
+  var h = (1 - v) * 120
+  var l = (sel) ? '50' : '90'
+  return "hsl("+h+", 70%, "+l+"%)"
+  // return d3.interpolateRdYlGn(1 - v)
+}
+
+function nodeColor(n) {
+  return (n.client) ? color(normalDispPart(n.Dolg, dispDolg), selectedRegBodys.filter(x => n.Regbodys.indexOf(x) > -1).length) : 'white' ;
+}
+
+function filialClick(st, id) {
+  if (st.checked) {
+    selectedRegBodys.push(id)
+  } else {
+    var index = selectedRegBodys.indexOf(id);
+    selectedRegBodys.splice(index, 1);
+  }
+  d3.selectAll("circle")
+  .attr("fill", function(d) { return nodeColor(d) })
+}
+
+function switchFilterbox()  {
+  infoVisible = false
+  d3.select('#infobox').attr('class', function () {return (infoVisible) ? '' : 'hidden'})
+  filterVisible = !filterVisible
+  d3.select('#filterbox').attr('class', function () {return (filterVisible) ? '' : 'hidden'})
+}
+
+function switchInfobox() {
+  infoVisible = !infoVisible
+  d3.select('#infobox').attr('class', function () {return (infoVisible) ? '' : 'hidden'})
+}
+
+function hideInfobox() {
+  infoVisible = false
+  d3.select('#infobox').attr('class', function () {return (infoVisible) ? '' : 'hidden'})
+}
+
+d3.select('#infobox').attr('class', function () {return (infoVisible) ? '' : 'hidden'})
+
+d3.json("regbodys.json", function(error, data) {
+  if (error) {
+      console.log(error)
+      if (data) {
+        console.log(data)
+      }
+      throw error
+  };
+
+  var regBodys = data
+
+  var regBodyM = d3.select('#filterbox')
+    .append('div')
+
+  regBodyM.append('h3').text('Филиалы')
+  var regBodyL = regBodyM.append('ul')
+  for (let i in regBodys) {
+    regBodyL.append('li')
+      .text(regBodys[i].name)
+  }
+
+  d3.json("clientdata.json", function(error, data) {
+    if (error) {
+        console.log(error)
+        if (data) {
+          console.log(data)
+        }
+        throw error
+    };
+
+    var date = data[0].clients[0].DateFact
+    if (date) d3.select('#infobox').append('div').text('Данные по состоянию на ' + date)
+
+    selectedRegBodys = regBodys.map(x => x.id)
+
+    var graph = data.filter((x) => x //&& x.count < 35
+  ) // .splice(1, 1000)
+
+    var showedGraph = graph.filter((x) => x.groupCount >= minGroupSize)
+
+    var nodes = showedGraph.reduce((r, x) => {
+      r.push({
+        id: x.inn,
+        inn: x.inn,
+        name:x.name,
+        client: 1,
+        group: x.group,
+        LostPay: x.clients.reduce((r, c) => r + (c.LostPay || 0), 0),
+        Dolg: x.clients.reduce((r, c) => r + (c.Dolg || 0), 0),
+        Regbodys: x.clients.map(cx => cx.RegbodyId)
+      })
+      return r
+    }
+    , [])
+    .concat(showedGraph.reduce((r, x) =>
+      r.concat(x.founders.map(f => {
+        return {
+          id: f.inn,
+          inn: f.inn,
+          name: f.name,
+          group: x.group
+        }
+      }))
+    , []))
+    .filter((x, i , self) => self.map((dx) => dx.id).indexOf(x.id) === i)
+    .sort((a, b) => ((a.Dolg || 0) < (b.Dolg || 0)) ? -1 : 1)
+
+    var links = showedGraph.reduce((r, x) =>
+      r.concat(
+        x.founders.map(f => {
+          return {
+            source: x.inn,
+            target: f.inn
+          }
+        })
+      )
+    , [])
+
+
+    dispDolg = normalDisp(nodes.filter(x => (x.Dolg)).map(x => x.Dolg))
+    var dispLostPay = normalDisp(nodes.filter(x => (x.LostPay)).map(x => x.LostPay))
+
+    var maxLostPay = nodes.reduce((r, x) => Math.max(r, (x.LostPay || 0)), 0) || 1
+
+    var zoomable_layer = svg.append('g').attr('class','zoom-layer');
+
+    svg.call(d3.zoom()
+      .scaleExtent([1 / 2, 8])
+      .on("zoom", zoomed)
+    );
+
+    var link = zoomable_layer.append("g")
+        .attr("class", "links")
+      .selectAll("line")
+      .data(links)
+      .enter().append("line")
+        .attr("stroke", "#ddd")
+        .attr("stroke-width", function(d) {return lineStroke / zoomLevel})
+        // .attr("marker-start", "url(#arrowhead)");
+  ;
+
+
+    var node = zoomable_layer.append("g")
+        .attr("class", "nodes")
+      .selectAll("g")
+      .data(nodes)
+      .enter().append("g")
+
+    var circles = node.append("circle")
+        .attr("r", function(d) {return node_radius(d)})
+        .attr("fill", function(d) { return nodeColor(d) })
+        .attr("stroke", function(d) { return "gray" })
+        .attr("class", function(d) { return nodeClass(d) })
+        .attr("stroke-width", function(d) {return circleStroke / zoomLevel })
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended))
+        .on('click', function(n) {
+          onClick(n)
+        })
+  ;
+
+    var search = d3.select('#search')
+      .append('input')
+      .attr('type', 'text')
+      .on('input', function () {
+        select_mode = this.value.length > 0
+        clear_selection()
+        if (this.value.length > 3) {
+          nodes.filter(x => x.name.toLowerCase().indexOf(this.value.toLowerCase()) >= 0 || x.inn.indexOf(this.value) >= 0)
+          .map(x => select_node(x))
+        }
+      })
+      .on('change', function () {
+        this.value = ''
+      })
+
+    // var lables = node.append("text")
+    //     .text(function(d) {
+    //       if (d.inn === d.tinn && d.count > 20) {
+    //         return d.name;
+    //       }
+    //     })
+    //     .attr('x', 6)
+    //     .attr('y', 3);
+
+
+    node.append("title")
+        .text(function(d) { return d.name +
+          ' ДЗ: ' + showNumFixed(d.Dolg / Math.pow(10,3)) +
+          ' ПДЗ: ' + showNumFixed(d.LostPay / Math.pow(10,3))
+        });
+
+    simulation
+        .nodes(nodes)
+        .on("tick", ticked);
+
+    simulation.force("link")
+        .links(links);
+
+    function fix_node(n) {
+      if (n.fixed) return;
+      n.fixed = true;
+      n.fx = n.x;
+      n.fy = n.y;
+      d3.selectAll("circle")
+      ._groups[0][n.index]
+      .attributes.r.value = node_radius(n);
+      // node._groups[0][n.index].append("text").text('rr');
+    }
+
+    function nodeClass(n) {
+        let res = ((n.client) ? 'client ' : 'external ') +
+        ((n.selected) ? 'selected ' : ((select_mode) ? 'deselected' : '')) +
+        ((n.fixed) ? 'fixed ' : '') +
+        ''
+        return res
+    }
+
+    function node_radius(node) {
+      return (3 + (normalDispPart(node.LostPay, dispLostPay)) * 3 )  / zoomLevel;
+    };
+
+    function node_selected(node, level) {
+      return node.selected;
+    };
+
+
+    function onClick(n) {
+      select_mode = !n.fixed
+      if (n.fixed) {
+        clear_selection();
+      } else {
+        clear_selection();
+        select_all(n, 0);
+        fix_node(n);
+        zoomPan(zoomFocus, (-n.x ) * zoomFocus + width /1.7, (-n.y ) * zoomFocus + height /2);
+      }
+    }
+
+    function showNumFixed(v, digits = 0) {
+      if (!(v) && v !== 0) {
+        return '-'
+      } else {
+        return v.toFixed(digits)
+      }
+    }
+
+    function select_node(node, level, type) {
+      if (!nodes.filter(x => x.selected)[0]) {
+        var header = textItems.append('thead')
+        .attr('class','table-header')
+        .append('tr')
+        header.append('th').text("ИНН")
+        header.append('th').text("Наименование")
+        header.append('th').text("ДЗ, тыс.р")
+        header.append('th').text("ПДЗ, тыс.р")
+        header = d3.select('.table-header').append('tr').attr('class','total')
+        header.append('th').text("Всего:")
+        header.append('th').attr('class','total-count').text(" ")
+        header.append('th').attr('class','total-dz right').text(" ")
+        header.append('th').attr('class','total-pdz right').text(" ")
+      }
+
+      let res = node.selected;
+      node.selected = true;
+      if (res) return !res;
+
+      function title() {
+        if (level > 1) return
+        if (type === 'source') return 'Совладелец'
+        if (type === 'target') return 'Зависимое лицо'
+      }
+
+      d3.selectAll("circle")
+      .filter((d) => d === node)
+      .attr('class', nodeClass(node) + ' ' + ((level === 1) ? type : '') + ' ' + ((level === 0) ? 'main-item' : ''));
+
+      var row = textItems.append('tr')
+      .attr('class', nodeClass(node) + ' ' + ((level === 1) ? type : '') + ' ' + ((level === 0) ? 'main-item' : ''))
+      .attr('title', title(type))
+      .on('click', function(n) {
+        onClick(node)
+      })
+      row.append('td').attr('class','center').text(node.id)
+      row.append('td').text(node.name)
+      row.append('td').attr('class','right').text(showNumFixed(node.Dolg / Math.pow(10,3)))
+      row.append('td').attr('class','right').text(showNumFixed(node.LostPay / Math.pow(10,3)));
+      selection_totals = {
+          count: (selection_totals.count || 0) + 1,
+          dz: (selection_totals.dz || 0) + (node.Dolg || 0),
+          pdz: (selection_totals.pdz || 0) + (node.LostPay || 0)
+        }
+      d3.select('.total-count').text(function() {return selection_totals.count})
+      d3.select('.total-dz').text(function() {return showNumFixed(selection_totals.dz / Math.pow(10,3))})
+      d3.select('.total-pdz').text(function() {return showNumFixed(selection_totals.pdz / Math.pow(10,3))})
+      return !res;
+    }
+
+
+    function clear_selection() {
+      nodes = nodes.map(x => {
+        x.selected = false;
+        x.fixed = false;
+        x.fx = null;
+        x.fy = null;
+        return x;
+      })
+      selection_totals = {}
+      d3.selectAll("circle")
+      .attr("r", function(d) {return node_radius(d)})
+      .attr("fill", function(d) { return nodeColor(d) })
+      .attr('class', (d) => nodeClass(d));
+      d3.selectAll("line")
+       .attr('class', '');
+
+      textItems.html("")
+    };
+
+    function select_all(node, level, type) {
+
+      if (!level) {
+        select_node(node, level, type);
+      }
+
+      var near_links = d3.selectAll("line")
+      .filter(function(d) {
+        return (d.source === node) || (d.target === node)
+      })
+
+      if (level === 0) {
+        near_links
+        .attr('class', (d) => (d.source === node) ? 'source' : 'target');
+      }
+
+      near_links
+      .filter((d) => {
+        let n = (d.source === node) ? d.target : d.source
+        return select_node(n, level+1, (d.source === node) ? 'source' : 'target' );
+      })
+      .filter((d) => {
+        select_all((d.source === node) ? d.target : d.source, level+1, (d.source === node) ? 'source' : 'target' )
+      })
+
+    }
+
+
+    function ticked() {
+      link
+          .attr("x1", function(d) { return d.source.x; })
+          .attr("y1", function(d) { return d.source.y; })
+          .attr("x2", function(d) { return d.target.x; })
+          .attr("y2", function(d) { return d.target.y; });
+
+      node
+          .attr("transform", function(d) {
+            return "translate(" + d.x + "," + d.y + ")";
+          })
+    }
+
+    function dragstarted(d) {
+      if (!d3.event.active) simulation.alphaTarget(0.1).restart();
+      // fix_node(d);
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(d) {
+      d.fx = d3.event.x;
+      d.fy = d3.event.y;
+    }
+
+    function dragended(d) {
+      if (!d3.event.active) simulation.alphaTarget(0);
+      d.fx = (d.fixed) ? d.fx: null;
+      d.fy = (d.fixed) ? d.fy: null;
+    }
+
+    function zoomPan(k, x, y) {
+      zoomLevel = Math.pow(k, zoomStep);
+      zoomable_layer.attr("transform", "translate(" + x +", " + y + ") scale(" + k + ")");
+      d3.selectAll("circle")
+      .attr("r", function(d) {return node_radius(d)})
+      .attr("stroke-width", function(d) {return circleStroke / zoomLevel});
+      d3.selectAll("line")
+      .attr("stroke-width", function(d) {return lineStroke / zoomLevel});
+    }
+
+    function zoomed() {
+      zoomPan(d3.event.transform.k, d3.event.transform.x, d3.event.transform.y)
+    }
+
+  });
+
+});
+
+
+
+</script>
